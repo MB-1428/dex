@@ -1,0 +1,67 @@
+plugins {
+    id 'java'
+}
+
+group = 'com.example.dex'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_8
+    targetCompatibility = JavaVersion.VERSION_8
+}
+
+configurations {
+    d8
+}
+
+dependencies {
+    d8 'com.android.tools:r8:8.13.17'
+}
+
+tasks.register('buildDex') {
+
+    dependsOn tasks.named('classes')
+
+    doLast {
+
+        def outputDir = file("$buildDir/dex")
+        def classesDir = file("$buildDir/classes/java/main")
+
+        outputDir.mkdirs()
+
+        javaexec {
+
+            classpath = configurations.d8
+
+            mainClass = 'com.android.tools.r8.D8'
+
+            args '--min-api', '23'
+            args '--output', outputDir.absolutePath
+            args classesDir.absolutePath
+        }
+
+        println ""
+        println "=========================================="
+        println "DEX BUILD SUCCESS"
+        println "=========================================="
+        println "Output:"
+        println "${outputDir}/classes.dex"
+    }
+}
+
+tasks.register('packageDex', Zip) {
+
+    dependsOn 'buildDex'
+
+    archiveFileName = 'dex-package.zip'
+
+    destinationDirectory = file("$buildDir/release")
+
+    from("$buildDir/dex") {
+        include 'classes.dex'
+    }
+}
