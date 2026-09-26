@@ -1,82 +1,70 @@
 package com.example.dex;
 
-import android.app.Activity;
-import android.os.Bundle;
+import android.util.Log;
 import android.view.Surface;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
+import android.view.SurfaceControl;
 
-public class Main extends Activity
-        implements SurfaceHolder.Callback {
+public final class Main {
 
-    private SurfaceView surfaceView;
-    private Thread renderThread;
-    private volatile boolean running;
+    private static final String TAG = "imgui-MB";
 
-    @Override
-    protected void onCreate(Bundle state) {
-        super.onCreate(state);
+    public static void main(String[] args) {
 
-        surfaceView = new SurfaceView(this);
+        Log.i(TAG, "================================");
+        Log.i(TAG, " SurfaceControl test");
+        Log.i(TAG, "================================");
 
-        surfaceView
-                .getHolder()
-                .addCallback(this);
+        try {
+            Log.i(TAG, "SDK = " +
+                    android.os.Build.VERSION.SDK_INT);
 
-        setContentView(surfaceView);
-    }
+            Log.i(TAG, "Creating SurfaceControl...");
 
-    @Override
-    public void surfaceCreated(
-            SurfaceHolder holder) {
+            SurfaceControl control =
+                    new SurfaceControl.Builder()
+                            .setName("imgui-MB-Test")
+                            .setBufferSize(800, 600)
+                            .build();
 
-        Surface surface = holder.getSurface();
+            Log.i(TAG, "SurfaceControl created");
 
-        if (!NativeBridge.createFromSurface(surface)) {
-            return;
+            Surface surface =
+                    new Surface(control);
+
+            Log.i(TAG, "Surface created");
+            Log.i(TAG, "isValid = " + surface.isValid());
+
+            SurfaceControl.Transaction transaction =
+                    new SurfaceControl.Transaction();
+
+            transaction
+                    .setLayer(control, 100000)
+                    .show(control)
+                    .apply();
+
+            Log.i(TAG, "Transaction applied");
+
+            /*
+             * 暂时不要退出。
+             *
+             * 保持 SurfaceControl 存活，
+             * 方便后面接 EGL。
+             */
+            while (true) {
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+
+        } catch (Throwable e) {
+
+            Log.e(
+                    TAG,
+                    "SurfaceControl test failed",
+                    e
+            );
         }
-
-        running = true;
-
-        renderThread = new Thread(
-                new Runnable() {
-                    @Override
-                    public void run() {
-
-                        while (running) {
-                            NativeBridge.drawFrame();
-
-                            try {
-                                Thread.sleep(16);
-                            } catch (InterruptedException e) {
-                                break;
-                            }
-                        }
-                    }
-                });
-
-        renderThread.start();
-    }
-
-    @Override
-    public void surfaceDestroyed(
-            SurfaceHolder holder) {
-
-        running = false;
-
-        if (renderThread != null) {
-            renderThread.interrupt();
-            renderThread = null;
-        }
-
-        NativeBridge.destroy();
-    }
-
-    @Override
-    public void surfaceChanged(
-            SurfaceHolder holder,
-            int format,
-            int width,
-            int height) {
     }
 }
