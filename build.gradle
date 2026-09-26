@@ -5,10 +5,6 @@ plugins {
 group = 'com.example.dex'
 version = '1.0.0'
 
-repositories {
-    mavenCentral()
-}
-
 java {
     sourceCompatibility = JavaVersion.VERSION_8
     targetCompatibility = JavaVersion.VERSION_8
@@ -34,9 +30,7 @@ tasks.register('buildDex') {
         outputDir.mkdirs()
 
         javaexec {
-
             classpath = configurations.d8
-
             mainClass = 'com.android.tools.r8.D8'
 
             args '--min-api', '23'
@@ -48,7 +42,6 @@ tasks.register('buildDex') {
         println "=========================================="
         println "DEX BUILD SUCCESS"
         println "=========================================="
-        println "Output:"
         println "${outputDir}/classes.dex"
     }
 }
