@@ -18,9 +18,18 @@ dependencies {
     d8 'com.android.tools:r8:8.13.17'
 }
 
+// ✅ 新增：打包 class 文件为 JAR 的任务
+tasks.register('jarClasses', Jar) {
+    dependsOn tasks.named('classes')
+    archiveFileName = 'classes.jar'
+    destinationDirectory = file("$buildDir/libs")
+    from("$buildDir/classes/java/main")
+}
+
+// ✅ 修改：buildDex 现在依赖 jarClasses，并使用 JAR 文件作为输入
 tasks.register('buildDex', JavaExec) {
 
-    dependsOn tasks.named('classes')
+    dependsOn tasks.named('jarClasses')  // ← 改：原来是 dependsOn 'classes'
 
     classpath = configurations.d8
 
@@ -28,7 +37,7 @@ tasks.register('buildDex', JavaExec) {
 
     args '--min-api', '23'
     args '--output', file("$buildDir/dex").absolutePath
-    args file("$buildDir/classes/java/main").absolutePath
+    args file("$buildDir/libs/classes.jar").absolutePath  // ← 改：原来是 "$buildDir/classes/java/main"
 
     doFirst {
         file("$buildDir/dex").mkdirs()
