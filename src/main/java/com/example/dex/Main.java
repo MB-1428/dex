@@ -2,11 +2,16 @@ package com.example.dex;
 
 import android.util.Log;
 import android.view.Surface;
-import android.view.SurfaceControl;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 
 public final class Main {
 
     private static final String TAG = "imgui-MB";
+
+    private Main() {
+    }
 
     public static void main(String[] args) {
 
@@ -15,42 +20,181 @@ public final class Main {
         Log.i(TAG, "================================");
 
         try {
-            Log.i(TAG, "SDK = " +
-                    android.os.Build.VERSION.SDK_INT);
+            Log.i(
+                    TAG,
+                    "SDK = " + android.os.Build.VERSION.SDK_INT
+            );
 
-            Log.i(TAG, "Creating SurfaceControl...");
+            Log.i(TAG, "Loading android.view.SurfaceControl...");
 
-            SurfaceControl control =
-                    new SurfaceControl.Builder()
-                            .setName("imgui-MB-Test")
-                            .setBufferSize(800, 600)
-                            .build();
+            Class<?> surfaceControlClass =
+                    Class.forName("android.view.SurfaceControl");
+
+            Log.i(
+                    TAG,
+                    "SurfaceControl class found: "
+                            + surfaceControlClass
+            );
+
+            /*
+             * SurfaceControl.Builder
+             */
+            Class<?> builderClass =
+                    Class.forName(
+                            "android.view.SurfaceControl$Builder"
+                    );
+
+            Log.i(TAG, "Builder class found");
+
+            Constructor<?> builderConstructor =
+                    builderClass.getDeclaredConstructor();
+
+            builderConstructor.setAccessible(true);
+
+            Object builder =
+                    builderConstructor.newInstance();
+
+            Log.i(TAG, "Builder created");
+
+            /*
+             * setName()
+             */
+            Method setName =
+                    builderClass.getMethod(
+                            "setName",
+                            String.class
+                    );
+
+            setName.invoke(
+                    builder,
+                    "imgui-MB-Test"
+            );
+
+            /*
+             * setBufferSize()
+             */
+            Method setBufferSize =
+                    builderClass.getMethod(
+                            "setBufferSize",
+                            int.class,
+                            int.class
+                    );
+
+            setBufferSize.invoke(
+                    builder,
+                    800,
+                    600
+            );
+
+            Log.i(TAG, "Builder configured");
+
+            /*
+             * build()
+             */
+            Method build =
+                    builderClass.getMethod("build");
+
+            Object control =
+                    build.invoke(builder);
+
+            if (control == null) {
+                throw new RuntimeException(
+                        "SurfaceControl.build() returned null"
+                );
+            }
 
             Log.i(TAG, "SurfaceControl created");
 
+            /*
+             * Surface(SurfaceControl)
+             */
+            Constructor<Surface> surfaceConstructor =
+                    Surface.class.getConstructor(
+                            surfaceControlClass
+                    );
+
             Surface surface =
-                    new Surface(control);
+                    surfaceConstructor.newInstance(
+                            control
+                    );
 
             Log.i(TAG, "Surface created");
-            Log.i(TAG, "isValid = " + surface.isValid());
 
-            SurfaceControl.Transaction transaction =
-                    new SurfaceControl.Transaction();
+            Log.i(
+                    TAG,
+                    "Surface valid = "
+                            + surface.isValid()
+            );
 
-            transaction
-                    .setLayer(control, 100000)
-                    .show(control)
-                    .apply();
+            /*
+             * Transaction
+             */
+            Class<?> transactionClass =
+                    Class.forName(
+                            "android.view.SurfaceControl$Transaction"
+                    );
+
+            Constructor<?> transactionConstructor =
+                    transactionClass.getDeclaredConstructor();
+
+            transactionConstructor.setAccessible(true);
+
+            Object transaction =
+                    transactionConstructor.newInstance();
+
+            Log.i(TAG, "Transaction created");
+
+            /*
+             * setLayer()
+             */
+            Method setLayer =
+                    transactionClass.getMethod(
+                            "setLayer",
+                            surfaceControlClass,
+                            int.class
+                    );
+
+            setLayer.invoke(
+                    transaction,
+                    control,
+                    100000
+            );
+
+            /*
+             * show()
+             */
+            Method show =
+                    transactionClass.getMethod(
+                            "show",
+                            surfaceControlClass
+                    );
+
+            show.invoke(
+                    transaction,
+                    control
+            );
+
+            /*
+             * apply()
+             */
+            Method apply =
+                    transactionClass.getMethod(
+                            "apply"
+                    );
+
+            apply.invoke(transaction);
 
             Log.i(TAG, "Transaction applied");
 
+            Log.i(TAG, "================================");
+            Log.i(TAG, " SurfaceControl test SUCCESS");
+            Log.i(TAG, "================================");
+
             /*
-             * 暂时不要退出。
-             *
-             * 保持 SurfaceControl 存活，
-             * 方便后面接 EGL。
+             * 保持对象存活。
              */
             while (true) {
+
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -62,7 +206,7 @@ public final class Main {
 
             Log.e(
                     TAG,
-                    "SurfaceControl test failed",
+                    "SurfaceControl test FAILED",
                     e
             );
         }
