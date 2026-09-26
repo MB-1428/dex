@@ -18,37 +18,26 @@ dependencies {
     d8 'com.android.tools:r8:8.13.17'
 }
 
-tasks.register('buildDex') {
+tasks.register('buildDex', JavaExec) {
 
     dependsOn tasks.named('classes')
 
-    doLast {
+    classpath = configurations.d8
 
-        def outputDir = file("$buildDir/dex")
-        def classesDir = file("$buildDir/classes/java/main")
+    mainClass = 'com.android.tools.r8.D8'
 
-        outputDir.mkdirs()
+    args '--min-api', '23'
+    args '--output', file("$buildDir/dex").absolutePath
+    args file("$buildDir/classes/java/main").absolutePath
 
-        javaexec {
-            classpath = configurations.d8
-            mainClass = 'com.android.tools.r8.D8'
-
-            args '--min-api', '23'
-            args '--output', outputDir.absolutePath
-            args classesDir.absolutePath
-        }
-
-        println ""
-        println "=========================================="
-        println "DEX BUILD SUCCESS"
-        println "=========================================="
-        println "${outputDir}/classes.dex"
+    doFirst {
+        file("$buildDir/dex").mkdirs()
     }
 }
 
 tasks.register('packageDex', Zip) {
 
-    dependsOn 'buildDex'
+    dependsOn tasks.named('buildDex')
 
     archiveFileName = 'dex-package.zip'
 
